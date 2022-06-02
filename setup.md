@@ -38,3 +38,21 @@ this creates new namespace
  go get -d github.com/GoesToEleven/GolangTraining/...
 
 ... will download all things recursively
+
+
+# GO commands
+
+```bash
+go mod int example.com/test # init a module
+go fmt ./... # in a working directory will format the code. Dots will format recursivelly
+go run main.go # runs code without building
+go install *.go # builds executable and puts it in a bin file for all */go files
+go get # way of downloading repo with go
+
+```
+
+# on modules
+when we are creating modulevia go module namespace.com/namespace. We are creating a file go.mod with our namespace
+
+when we add deps by go get <> they are added to go.sum with a cryptographic hash of the versions.
+This file should be added to version controll as it will make sure correct and secure packages are downlaoded
