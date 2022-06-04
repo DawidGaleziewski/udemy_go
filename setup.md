@@ -56,3 +56,9 @@ when we are creating modulevia go module namespace.com/namespace. We are creatin
 
 when we add deps by go get <> they are added to go.sum with a cryptographic hash of the versions.
 This file should be added to version controll as it will make sure correct and secure packages are downlaoded
+
+Each module needs to have a package named "main" with func main() as a entry point of the application.
+
+# on packages
+
+in go we need to import packages even for little things if we want to use them in standard language. To see all packages go has to offer we can go to godoc.org
