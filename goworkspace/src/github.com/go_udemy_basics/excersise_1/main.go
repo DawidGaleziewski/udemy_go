@@ -7,6 +7,7 @@ func main(){
 	exercise2()
 	exercise3()
 	exercise4()
+	exercise5()
 }
 
 
@@ -38,15 +39,23 @@ func exercise3(){
 	fmt.Println(s)
 }
 
-type hop1 = int
-type hop2 = hop1
-type hop3 = hop2
+type hop1 int
+type hop2 hop1
+type hop3 hop2
 var xs hop3
 
 func exercise4(){
-
-
-	fmt.Printf("x is of type: %T", x)
+	fmt.Printf("x is of type: %T \n", xs)
 	xs = 42
-	fmt.Printf("x is of type: %T", x)
+	fmt.Printf("x is of type: %T \n", xs)
+}
+
+type dog string
+var myPet dog
+var name = "fafik"
+
+
+func exercise5(){
+	myPet = dog(name)
+	fmt.Printf("myPet is of tyep %T and its value is %v \n", myPet, myPet)
 }
