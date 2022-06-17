@@ -61,4 +61,5 @@ Each module needs to have a package named "main" with func main() as a entry poi
 
 # on packages
 
-in go we need to import packages even for little things if we want to use them in standard language. To see all packages go has to offer we can go to godoc.org
+in go we need to import packages even for little things if we want to use them in standard language. To see all packages go has to offer we can go to godoc.org.
+Most packages will return a tuple of vaue and error
