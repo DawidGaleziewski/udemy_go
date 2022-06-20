@@ -46,3 +46,31 @@ another popular coding scheme replacing ascii is UTF-8
 1000 gb = tb
 
 ## numeral systems
+
+system we use to track numbers.
+
+One we use everyday is "base 10 decimal"
+
+therefore in rows we have:
+
+10^0, 10^1, 10^2, 10^3, 10^4, 10^5
+
+
+### binary numeric system
+2^0 (ones), 2^1 (twos), 2^2 (fours), 2^3 (eigths)
+
+3 = 11
+4 = 001
+5 = 101
+
+### base 16 numeric system
+when we have a numeric system that are higher then 10 we go with 1-9 and go with letter of the alphabet after that
+
+ 16^3 (4,096) ,16^2 (256), 16^1, 16^0
+
+15 = F
+16 = 10
+17 = 11
+911 = 38f
+
+ps. official notation for hexadecimal starts with 0x. so 911 would be 0x38f
