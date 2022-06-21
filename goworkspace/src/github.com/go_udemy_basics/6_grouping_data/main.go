@@ -120,4 +120,25 @@ func usingMaps(){
 	} else {
 		fmt.Println("Value does not exist")
 	}
+
+	// We can add values to map simply by using equals
+	personelAges["Lucy"] = 99
+
+	fmt.Printf("newly added value: %v \n", personelAges)
+
+	// We cen iterate over map by using range keyword
+
+	const MAX_AGE = 30;
+	for key, value := range personelAges {
+
+		if(value > MAX_AGE){
+			fmt.Printf("%v is already %v years old. Lets fire him and hire new one \n", key, value)
+		} else {
+			fmt.Printf("%v is only %v years old. Lets still keep him for the next %v years \n", key, value, MAX_AGE - value)
+		}
+	}
+
+	// we use delete build in method for deleting keys from map
+	delete(personelAges, "Lucy")
+	fmt.Printf("after deleting Lucy %v", personelAges)
 }
