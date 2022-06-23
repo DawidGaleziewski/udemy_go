@@ -24,3 +24,6 @@ Aliasing a type with a primitive type is considered a bad practice most of the t
 type foo int
 var y foo
 ```
+
+## lexical element
+broad term - if we dont know it its a KAYWORD or identifier or something else
