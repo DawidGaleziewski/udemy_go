@@ -19,6 +19,7 @@ func main(){
 	// in order to get the value from a pointer we can use * symbol in front of a pointer
 	fmt.Printf("pointer agePrt points to value: %v \n", *agePtr)
 
-	// IMPORTANT *int is a type, while *agePtr is a operator
+	// IMPORTANT *int is a type, while *agePtr is a operator.
+	// Operation of getting the value of the pointer is called DEREFFERENCING the address
 }
 
