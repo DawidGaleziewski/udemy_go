@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+// & gives yoi the address
+// * gives you the value stored at the address
 func main(){
 	// pointer is pointing to a place in memory where the value is stored. Each place in memory has address. 
 	age := 42
@@ -21,5 +23,11 @@ func main(){
 
 	// IMPORTANT *int is a type, while *agePtr is a operator.
 	// Operation of getting the value of the pointer is called DEREFFERENCING the address
+
+	// we can overide the value in memory by DEREFERENCING it
+	*agePtr = 500
+
+	fmt.Printf("age is now: %v \n", age)
+
 }
 
