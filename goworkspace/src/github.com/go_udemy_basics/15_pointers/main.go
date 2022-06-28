@@ -4,9 +4,16 @@ import (
 	"fmt"
 )
 
+
+func main(){
+	basicPoinetOperation()
+	usePointerToChangeValuesOutOfScope()
+
+}
+
 // & gives yoi the address
 // * gives you the value stored at the address
-func main(){
+func basicPoinetOperation(){
 	// pointer is pointing to a place in memory where the value is stored. Each place in memory has address. 
 	age := 42
 
@@ -28,6 +35,30 @@ func main(){
 	*agePtr = 500
 
 	fmt.Printf("age is now: %v \n", age)
+}
+
+func usePointerToChangeValuesOutOfScope(){
+	fmt.Println()
+	// when we pass value to a function, and we modify it it wont change outside of its scope
+	value := "#global scope"
+	fmt.Printf("Value in global scope is: %v \n", value)
+	passByValue(value)
+	fmt.Println()
+	fmt.Printf("After it was modified in function Value in global scope is: %v \n", value) // wont be affected
+
+	fmt.Println()
+	fmt.Println()
+	passByAddress(&value) // passing value by address
+	fmt.Printf("After it was modified in function by ADDRESS Value in global scope is: %v \n", value) // wont be affected
 
 }
 
+func passByValue(value string){
+	value ="#passByvalue"
+	fmt.Printf("#value inside passByValue %v \n", value)
+}
+
+func passByAddress(address *string){
+	// this is how we can mutate a value
+	*address = "###passByAddress"
+}
