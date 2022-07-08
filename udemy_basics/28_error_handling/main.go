@@ -18,7 +18,8 @@ func main() {
 	// checkPrintError()
 	// inputWithCheck()
 	// createFile()
-	waysOfLogginErrors()
+	// waysOfLogginErrors()
+	recoverFromPanic()
 }
 
 // checking errors in package
@@ -93,4 +94,30 @@ func waysOfLogginErrors() {
 		log.Fatalln("Howdy, logging error: Fatal 3", err) // fatal will shut the whole program. Defer functions will also not run! It will throw error status 1
 	}
 
+}
+
+// how to recover
+func recoverFromPanic() {
+	defer func() {
+		if r := recover(); r != nil { // common idiom, we first asign something and if its not empty we do something. We can only use recover inside a defered function
+			fmt.Println("Recovering")
+		}
+	}()
+}
+
+// Important on defer functions behaviour
+func deferInfo() int {
+	i := 0
+	// expression is evaluated when the call is deffered, if we deffer this function it will print 0 despite the fact it waiting untill the execution on the end of the function
+	defer fmt.Println(i)
+
+	i = 15
+
+	// defer functions are called in last in first out order. This will print 43210
+	for i := 0; i < 5; i++ {
+		defer fmt.Println(i)
+	}
+
+	defer func() { i = 20 }() //defer functions may override return values after they returned. This function will return 20
+	return i
 }
