@@ -34,6 +34,13 @@ func (h *Human) Wait(years int) { // if we want to modify something, we will hav
 	h.age = h.age + years
 }
 
+// composition by embedding types into structs
+type Superhuman struct {
+	Human;
+	superpowers []string;
+	age int;
+}
+
 func main() {
 	fmt.Println("test")
 
@@ -48,4 +55,20 @@ func main() {
 
 	mark.Wait(50)
 	fmt.Println("mark is now", mark.age)
+
+	// playing with composition
+	clark := Superhuman{
+		Human: Human{
+			name: "Clark",
+			surname: "Kent",
+			age: 500,
+			hobbies: []string{"photography"},
+		},
+		age: 1,
+		superpowers: []string{"flying", "strength", "laser sight"},
+	}
+
+	fmt.Println(clark.Human.name)
+	clark.Walk("to Loris") // it is still able to use methods from human. It will also recive only the human. So we do not have to do something like: 	clark.Human.Walk().
+	fmt.Println("clarks age", clark.age) // all properties and methods are "hoisted" to the top level
 }
