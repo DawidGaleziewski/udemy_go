@@ -16,7 +16,11 @@ type Dog struct {
 }
 
 func (h Human) Walk(destination string) {
-	fmt.Printf("%v is walking towards %v \n", h.name, destination)
+	fmt.Printf("%v is walking slowly towards %v \n", h.name, destination)
+}
+
+func (h Superhuman) Walk(destination string){
+	fmt.Printf("%v Ziuuum (superhuman speed) %v \n", h.name, destination)
 }
 
 func (d Dog) Walk(destination string) {
@@ -36,7 +40,7 @@ func (h *Human) Wait(years int) { // if we want to modify something, we will hav
 
 // composition by embedding types into structs
 type Superhuman struct {
-	Human;
+	Human; // all values from human will be promoted to the same level as Superhuman
 	superpowers []string;
 	age int;
 }
@@ -69,6 +73,14 @@ func main() {
 	}
 
 	fmt.Println(clark.Human.name)
-	clark.Walk("to Loris") // it is still able to use methods from human. It will also recive only the human. So we do not have to do something like: 	clark.Human.Walk().
+	clark.Human.Walk("fridge") // when we embeed a type that has methods. We can call it from inner type or directly from the outer type (they get promoted). Methods will hovewer, revice as arguments only the inner type
+	clark.Walk("to Loris") // it is still able to use methods from human.
 	fmt.Println("clarks age", clark.age) // all properties and methods are "hoisted" to the top level
 }
+
+// !IMPORTANT 
+/**
+"When we embed a type, the methods of that type become methods of the outer type, but when they are invoked, the receiver of the method is the inner type, not the outer one." - Effective Go
+**/
+
+// If we have two implementation of method that is named the same. Like walk above. The inner implementation wont get promoted. We can access seperate implementations by clark.Walk(), clark.Human.Walk()
