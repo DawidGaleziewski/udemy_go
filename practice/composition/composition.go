@@ -116,6 +116,33 @@ func main(){
 	}
 
 	var c Contractor
-	c.ProcessBoards(&tb )
-	fmt.Println("test")
+	fmt.Println(tb, boards)
+	c.ProcessBoards(&tb, &tb.nails, boards)
+	fmt.Println(tb, boards)
 }
+
+/**
+	Summary
+	1. We have declared a type Board which is a struct as a base type we will be working on
+	2. We pin pointed most basic behaviour we will need and describe each on them by its own interface
+	3. We combined those behaviours into a SET of behaviours we will need, composing larger interface from smaller one
+	4. We declared empty structs that only role is to be passed to recivers and we attach concrete implementation of the interface. 
+	Once could say we first designed the behaviour, and the struct is the agent that will carry on the behaviour in a certain way. It could be named a "TOOL"
+
+	5. We declared a empty struct that is a agent carrying out more complex tasks using any value that implements those behaviours i.e on multiple items.const
+	6. We defined a struct that is set of data and behaviours. It implements most basic behaviours we need. 
+	
+	7. We cast type describing implementation of our behaviour in a object and pass it to the agent
+
+	We could divide the process into
+	1) Plan data structure [Board] - Data Structure
+	2) Plan most basic behaviour [NailPuller, NailDriver] - Beh-1
+	3) Plan implementations of the behaviour [Mallet, Crowbar] Imp-1
+
+	4) Group basic behaviour into logical grups  [NailDriverPuller] - Beh-2
+	5) Group behaviour with data needed to carry out task [Toolbox] - BG + DS
+
+	6) Plan higer order behaviour and interactions between them  [Fasten, Unfasten, ProcessBoards] Impl-2
+
+	7) Implment thebehaviour [cast types, behaviour, data structures]
+**/
