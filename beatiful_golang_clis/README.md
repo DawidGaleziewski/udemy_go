@@ -37,3 +37,6 @@ func init() {
 	NetCmd.AddCommand(pingCmd) // we can nest this way sub commands in init
 }
 ```
+
+## viper
+we can use viper if we need add yaml configs
