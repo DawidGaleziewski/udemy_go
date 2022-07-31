@@ -6,6 +6,13 @@ import (
 	"text/template"
 )
 
+// one thing we can do to optimize our templates is to make sure they are parsed only once
+var initTpl *template.Template
+func init(){
+	// Musat will do erro checking.
+	initTpl = template.Must(template.ParseGlob("templates/*.gohtml"))
+}
+
 // go standard library has two kinds of templates. Text templates which is the fundation and HTML templates which builds on top of it but has more thigs like security baked into it.
 // go encourages to use less abstractions and think more like a programer
 
