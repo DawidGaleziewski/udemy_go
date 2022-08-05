@@ -1,16 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var tpl *template.Template
 
+func formatYYMMDD(time time.Time) string {
+	return fmt.Sprintf("%v - %v - %v",  time.Year(),  time.Month(), time.Day())
+}
+
 // you can do this but you should not most of the time. As this is against separation of concerns. We have a type called FuncMap that is a map where each value is a interfcae{}
 var fm = template.FuncMap{
+	"time": formatYYMMDD,
 	"uc": strings.ToUpper,
 	"ft": firstThree,
 }
@@ -57,6 +64,12 @@ func main(){
 
 	// using functions inside the templates. We can use helpers like UC now and manipulate the templates inside. Do not over do this as logic should not be to heavy inside the templates
 	err = tpl.ExecuteTemplate(os.Stdout, "tpl_funcs.gohtml", person)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// using template functions to format time object. Also shows the pipline example
+	err = tpl.ExecuteTemplate(os.Stdout, "time.gohtml", time.Now())
 
 }
 
