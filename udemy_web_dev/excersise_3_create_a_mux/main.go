@@ -33,18 +33,17 @@ func main() {
 		}
 
 		go func(conn net.Conn) {
-			method, url := getHeaders(conn)
-			router(conn, method, url)
+			router(conn)
 		}(conn)
 	}
 }
 
-func getHeaders(conn net.Conn) (string, string) {
+func router(conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
 	method := ""
 	url := ""
+	i := 0;
 
-	i := 0
 	for scanner.Scan() {
 		ln := scanner.Text()
 		if i == 0 {
@@ -52,7 +51,6 @@ func getHeaders(conn net.Conn) (string, string) {
 			fields := strings.Fields(ln)
 			method = fields[0]
 			url = fields[1]
-
 		}
 
 		if ln == "" {
@@ -61,66 +59,73 @@ func getHeaders(conn net.Conn) (string, string) {
 		i++
 	}
 
-	return method, url
+	req := HTTP{
+		conn,
+		method,
+		url,
+	}
+
+
+	route(req, "GET", "/", func(res HTTP){
+		page := getTemplate("index.gohtml", "test")
+		res.send(page)
+		conn.Close()
+	})
+
+	route(req, "GET", "/about", func(res HTTP){
+		page := getTemplate("about.gohtml", "test")
+		res.send(page)
+		conn.Close()
+	})
+
+	
+	route(req, "GET", "/contact", func(res HTTP){
+		page := getTemplate("contact.gohtml", "test")
+		res.send(page)
+		conn.Close()
+	})
+
+	route(req, "POST", "/contact", func(res HTTP) {
+		page := getTemplate("thanks.gohtml", "test")
+		res.send(page)
+		conn.Close()
+	})
+
+
+	route(req, "*", "*", func(res HTTP) {
+		page := getTemplate("404.gohtml", "test")
+		res.send(page)
+		conn.Close()
+	})
 }
 
-func router(conn net.Conn, method string, url string) {
-
-
-	switch method {
-	case "GET":
-		defer conn.Close()
-		buffer := new(bytes.Buffer)
-		templateName, exists := routesToTemplate[url]
-		if exists {
-			err := tpl.ExecuteTemplate(buffer, templateName, url)
-			if err != nil {
-				log.Println(err)
-			}
-		} else {
-			tpl.ExecuteTemplate(buffer, "404.gohtml", url)
-		}
-
-		http := HTTP{
-			url:    url,
-			method: method,
-			status: "200",
-			body:   buffer.String(),
-		}
-		http.respond(conn)
-	case "POST":
-		defer conn.Close()
-		buffer := new(bytes.Buffer)
-		err := tpl.ExecuteTemplate(buffer, "thanks.gohtml", url)
-		if err != nil {
-			log.Println(err)
-		}
-		http := HTTP{
-			url:    url,
-			method: method,
-			status: "200",
-			body:   buffer.String(),
-		}
-		http.respond(conn)
-
-	default:
-		defer conn.Close()
-		fmt.Fprint(conn, "unknown method")
+func route(req HTTP, method string, url string, callback func(HTTP)){	
+	if req.method == method && req.url == url {
+		callback(req)
 	}
 }
 
-type HTTP struct {
-	url    string
-	method string
-	status string
-	body   string
+func getTemplate(name string, variable string) string{
+	buffer := new(bytes.Buffer)
+	err := tpl.ExecuteTemplate(buffer, name, variable)
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	return buffer.String()
 }
 
-func (H HTTP) startLine() string {
-	return fmt.Sprintf("HTTP/1.1 %v %v\r\n", H.status, HTTPStatusDesc[H.status])
+type HTTP struct {
+	conn net.Conn;
+	method string;
+	url string;
 }
-func (H HTTP) contentLength() string {
-	return fmt.Sprintf("Content-Length: %d\r\n", len(H.body))
+
+func (H HTTP) startLine(status string) string {
+	return fmt.Sprintf("HTTP/1.1 %v %v\r\n", status, HTTPStatusDesc[status])
+}
+func (H HTTP) contentLength(body string) string {
+	return fmt.Sprintf("Content-Length: %d\r\n", len(body))
 }
 func (H HTTP) contentType() string {
 	return fmt.Sprintf("Content-Type: text/html\r\n")
@@ -129,21 +134,15 @@ func (H HTTP) lineBreak() string {
 	return fmt.Sprintf("\r\n")
 }
 
-func (H HTTP) respond(conn net.Conn) {
+func (H HTTP) send(body string) {
 	fmt.Println(H)
-	fmt.Fprint(conn, H.startLine())
-	fmt.Fprint(conn, H.contentLength())
-	fmt.Fprint(conn, H.contentType())
-	fmt.Fprint(conn, H.lineBreak())
-	fmt.Fprint(conn, H.body)
+	fmt.Fprint(H.conn, H.startLine("200"))
+	fmt.Fprint(H.conn, H.contentLength(body))
+	fmt.Fprint(H.conn, H.contentType())
+	fmt.Fprint(H.conn, H.lineBreak())
+	fmt.Fprint(H.conn, body)
 }
 
 var HTTPStatusDesc = map[string]string{
 	"200": "OK",
-}
-
-var routesToTemplate = map[string]string{
-	"/": "index.gohtml",
-	"/about": "about.gohtml",
-	"/contact": "contact.gohtml",
 }
