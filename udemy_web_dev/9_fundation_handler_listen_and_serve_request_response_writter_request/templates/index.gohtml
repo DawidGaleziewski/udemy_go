@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+{{if .Form}}
+    <main>
+        <h2>Form data passed:</h2>
+        {{range $key, $value := .Form}}
+            <p>key: {{$key}}</p>
+            <ul>
+                {{range $value}}
+                    <li>{{.}}</li>
+                {{end}}
+            </ul>
+        {{end}}
+
+        <h2>Request headers:</h2>
+        <p>Methos: {{.Method}}</p>
+        <p>Methos: {{.URL}}</p>
+        <p>Host: {{.Host}}</p>
+        <p>Content length: {{.ContentLength}}</p>
+    </main>
+{{end}}
+    <form method="post" action="/">
+        <input type="text" name="fname" />
+        <input type="text" name="lname" />
+        <input type="submit" value="submit" />
+    </form>
+</body>
+</html>
