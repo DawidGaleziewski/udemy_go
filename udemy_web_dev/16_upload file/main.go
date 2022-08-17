@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -13,10 +14,9 @@ func main() {
 		http.ServeFile(w, r, "templates/index.html")
 	})
 	http.HandleFunc("/store", func(w http.ResponseWriter, r *http.Request) {
-		var s string
 		// make sure method is post
 		if r.Method == http.MethodPost {
-			file, _, err := r.FormFile("dick-pics")
+			file, fileMetadata, err := r.FormFile("dick-pics")
 			if err != nil {
 				http.Error(w, err.Error() + " on form parse", http.StatusInternalServerError)
 				return
@@ -28,9 +28,22 @@ func main() {
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-			s = string(bs)
 
-			fmt.Println(s)
+			//creating new file
+			dst, err := os.Create(filepath.Join(filepath.Join("./user/", fileMetadata.Filename)))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			dst.Close()
+
+			// write to a file we have created
+			_, err = dst.Write(bs)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 		}
 	})
 	http.ListenAndServe(":9090", nil)
