@@ -1,4 +1,4 @@
-module sessions
+module sessionstestproject
 
 go 1.18
 

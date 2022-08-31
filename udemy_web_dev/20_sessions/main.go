@@ -16,7 +16,7 @@ type user struct {
 }
 
 var userDB = map[string]user{}
-var sessionDB = map[string]string{}
+var sessionDB = map[string]string{} // we use composite literal to create a empty map. This is a alternative for useing make map.
 var tpl *template.Template
 
 func init(){
@@ -31,6 +31,11 @@ func init(){
 func main(){
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if IsLoggedIn(r) {
+			http.Redirect(w, r, "/my-account", http.StatusSeeOther)
+			return
+		}
+		
 		if r.Method == http.MethodGet {
 			tpl.ExecuteTemplate(w, "login.gohtml", "")
 			return
@@ -99,45 +104,33 @@ func main(){
 			// now we can redirect user to login
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 		}
+	})
 
-		http.HandleFunc("/my-account", func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodGet {
-				sessionID, err := r.Cookie("session")
+	
+	http.HandleFunc("/my-account", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			sessionID, err := r.Cookie("session")
 
-				if err != nil {
-					http.Redirect(w, r, "/login", http.StatusSeeOther)
-					return
-				}
-
-				tpl.ExecuteTemplate(w, "my_acc.gohtml", sessionID.Value)
+			if err != nil {
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
-		})
 
+			userID, ok := sessionDB[sessionID.Value]
+			if !ok {
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return	
+			}
 
-		// cookie, err := r.Cookie("session") // we can create a basic session cookie with uuid
+			userData, ok := userDB[userID]
+			if !ok {
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return	
+			}
 
-		// if err != nil { // for when no session was found. We set a new session. Normally this would be done by using login
-		// 	id := uuid.NewV4().String()
-		// 	cookie = &http.Cookie{
-		// 		Name: "session",
-		// 		Value: id,
-		// 		// Secure: true, // In normal session we would probably want to use secure conncetion
-		// 		HttpOnly: true,
-		// 	}
-		// 	userDB[id] = 0 // we set number of visits for each id
-
-		// 	http.SetCookie(w, cookie) // set the cookie so the session with the uuid is stored in browser
-		// }
-
-		// id := cookie.Value // we can take the id from the cookie to recognise who is performing a action
-		// visits, ok := userDB[id]
-		// if !ok {
-		// 	fmt.Println("no such session")
-		// }
-
-		// userDB[id] = visits + 1
-		// fmt.Println(userDB)
+			tpl.ExecuteTemplate(w, "my_acc.gohtml", userData)
+			return
+		}
 	})
 
 	http.ListenAndServe(":9090", nil)
