@@ -69,7 +69,11 @@ sudo systemctl enable golangapp.service
 sudo systemctl start golangapp.service
 sudo systemctl status golangapp.service
 
+6. setup database on AWS 
+RDBS -> create new instance -> msql
+put db instance identifier
 
+after that we can connect our local workbench to the aws db
 
 
 
