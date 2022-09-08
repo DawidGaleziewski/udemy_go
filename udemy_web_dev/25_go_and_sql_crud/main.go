@@ -8,23 +8,55 @@ import (
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql" // we use alias here. This is a throw away alist as we just import this for setup. We dont need no more code from this package
-	"github.com/google/uuid"
 )
 
 var db *sql.DB
 var err error
 var tpl *template.Template
 
-func init(){
+func init() {
 	tpl, err = template.ParseGlob("usersgo.html")
 	if err != nil {
 		log.Panicln(err)
 	}
 }
 
-func main(){
+const port = ":8080"
+
+func prepareTables(db *sql.DB) {
+	// we can create a table using db.Prepare and sql statment
+	// we can also use prepare for any other sql statment
+	stmt, err := db.Prepare(`CREATE TABLE blog_users (
+		id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		first_name VARCHAR(20) NOT NULL,
+		email VARCHAR(20) NOT NULL,
+		password VARCHAR(50) NOT NULL
+	)`)
+
+	if err != nil {
+		log.Println("#", err)
+	}
+
+	result, err := stmt.Exec()
+
+	if err != nil {
+		log.Println("##", err)
+	}
+
+	numberOfRowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	fmt.Println("lines affected: ", numberOfRowsAffected)
+
+}
+
+func main() {
+	fmt.Println("boooting up server on port", port)
 	// we just need to provide the name of the driver to the first param and this ugly address into the second one. This is a aws address example
-	db, err := sql.Open("mysql", "root:Test1!@tcp(localhost:3306)/gosql?charset=utf8")
+	db, err := sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+	prepareTables(db)
 
 	if err != nil {
 		log.Println(err)
@@ -32,29 +64,6 @@ func main(){
 	defer db.Close()
 
 	db.Ping()
-
-	http.HandleFunc("/table", func(w http.ResponseWriter, r *http.Request) {
-		// we can create a table using db.Prepare and sql statment
-		// we can also use prepare for any other sql statment
-		stmt, err := db.Prepare(`CREATE TABLE customer (name VARCHAR(20));`)
-		
-		if err != nil {
-			log.Println("#", err)
-		}
-		
-		result, err := stmt.Exec()
-
-		if err != nil {
-			log.Println("##", err)
-		}
-
-		numberOfRowsAffected, err := result.RowsAffected()
-		if err != nil {
-			log.Panicln(err)
-		}
-
-		fmt.Fprintln(w, "rows affected", numberOfRowsAffected)
-	})
 
 	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
@@ -76,13 +85,12 @@ func main(){
 
 			}
 
-
 			tpl.ExecuteTemplate(w, "usersgo.html", users)
 		}
 
 		if r.Method == http.MethodPost {
-			id := uuid.New().ID()
-			stmt, err := db.Prepare(fmt.Sprintf(`INSERT INTO gosql.blog_users VALUES (%v, "Mark", "dawid@gmail.com", "test123!");`, id))
+			// id := uuid.New().ID()
+			stmt, err := db.Prepare(fmt.Sprintf(`INSERT INTO gosql.blog_users VALUES ("Mark", "dawid@gmail.com", "test123!");`))
 			if err != nil {
 				log.Println(err)
 			}
@@ -92,9 +100,9 @@ func main(){
 				log.Panicln(err)
 			}
 
-			fmt.Fprintln(w,  "user created") 
+			fmt.Fprintln(w, "user created")
 		}
 	})
 
-	http.ListenAndServe(":9090", nil)
+	http.ListenAndServe(port, nil)
 }
