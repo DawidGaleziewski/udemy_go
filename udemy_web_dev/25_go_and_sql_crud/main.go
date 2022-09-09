@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql" // we use alias here. This is a throw away alist as we just import this for setup. We dont need no more code from this package
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
@@ -24,13 +26,14 @@ func init() {
 const port = ":8080"
 
 func prepareTables(db *sql.DB) {
+
 	// we can create a table using db.Prepare and sql statment
 	// we can also use prepare for any other sql statment
 	stmt, err := db.Prepare(`CREATE TABLE blog_users (
 		id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-		first_name VARCHAR(20) NOT NULL,
-		email VARCHAR(20) NOT NULL,
-		password VARCHAR(50) NOT NULL
+		first_name VARCHAR(100) NOT NULL,
+		email VARCHAR(100) NOT NULL,
+		password VARCHAR(100) NOT NULL
 	)`)
 
 	if err != nil {
@@ -56,7 +59,7 @@ func main() {
 	fmt.Println("boooting up server on port", port)
 	// we just need to provide the name of the driver to the first param and this ugly address into the second one. This is a aws address example
 	db, err := sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
-	prepareTables(db)
+	//prepareTables(db)
 
 	if err != nil {
 		log.Println(err)
@@ -89,8 +92,19 @@ func main() {
 		}
 
 		if r.Method == http.MethodPost {
-			// id := uuid.New().ID()
-			stmt, err := db.Prepare(fmt.Sprintf(`INSERT INTO gosql.blog_users VALUES ("Mark", "dawid@gmail.com", "test123!");`))
+			id := uuid.New().ID()
+			r.ParseForm()
+			fname := r.FormValue("first_name")
+			email := r.FormValue("email")
+			passwd := r.FormValue("password")
+			encryptedPasswd, err := bcrypt.GenerateFromPassword([]byte(passwd), 4)
+
+			fmt.Println("email is", email)
+			if err != nil {
+				log.Panicln(err)
+			}
+
+			stmt, err := db.Prepare(fmt.Sprintf(`INSERT INTO gosql.blog_users VALUES ("%v", "%v", "%v", "%v");`, id, fname, email, string(encryptedPasswd)))
 			if err != nil {
 				log.Println(err)
 			}
