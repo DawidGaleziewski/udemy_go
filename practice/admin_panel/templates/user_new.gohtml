@@ -7,14 +7,17 @@
     <title>GO admin panel: login</title>
 </head>
 <body>
-    <form method="post" action="api/user/auth">
+    <form method="POST" action="/api/user">
         <label for="email">Email:</label>
         <input id="email" name="email" type="email" />
+
+        <label for="name">Name:</label>
+        <input id="name" name="name" type="text" />
 
         <label for="password">Password:</label>
         <input id="password" name="password" type="password" />
         
-        <input type="submit" value="Login" />
+        <input type="submit" value="Register" />
     </form>
 </body>
 </html>
