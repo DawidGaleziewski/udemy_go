@@ -64,6 +64,7 @@ func (user User) validate() (validationErrors []string, isValid bool, err error)
 
 func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []string, err error) {
 	var isUserDataValid bool
+
 	validationErrors, isUserDataValid, err = user.validate()
 
 	if err != nil {

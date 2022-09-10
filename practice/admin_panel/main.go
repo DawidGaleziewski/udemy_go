@@ -1,18 +1,15 @@
 package main
 
 import (
+	"admin_panel/user"
 	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
 
 	"net/http"
-	"time"
-
-	"admin_panel/user"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
 )
 
 var tpl *template.Template
@@ -40,69 +37,45 @@ func main() {
 	})
 
 	http.HandleFunc("/api/user/auth", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			return
-		}
+		// if isPOST(r) {
+		// 	return
+		// }
 	})
 
 	http.HandleFunc("/user/new", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
 			tpl.ExecuteTemplate(w, "user_new.gohtml", "")
 			return
-		}
+		})
 	})
 
 	http.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			r.ParseForm()
+		// onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
+		// 	user.GetUserDetail(w, r, *db)
+		// })
 
-			name := r.FormValue("name")
-			email := r.FormValue("email")
-			password := r.FormValue("password")
-
-			fmt.Println("form name", name)
-
-			ID, err := uuid.NewUUID()
-			if err != nil {
-				log.Println(err)
-			}
-
-			user := user.User{
-				ID:           ID,
-				Name:         name,
-				Email:        email,
-				Password:     password,
-				CreationDate: time.Now(),
-			}
-
-			userData, validationErrors, err := user.Register(db)
-
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "internal server error", http.StatusInternalServerError)
-				return
-			}
-
-			if len(validationErrors) > 0 {
-				errMsg := ""
-				for _, value := range validationErrors {
-					errMsg += value + "\n"
-				}
-				http.Error(w, errMsg, http.StatusBadRequest)
-				return
-			}
-
-			err = tpl.ExecuteTemplate(w, "user_detail.gohtml", userData)
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "internal server error", http.StatusInternalServerError)
-				return
-			}
-			return
-		}
+		onPOST(w, r, func(w http.ResponseWriter, r *http.Request) {
+			user.CreateAdminUser(w, r, db)
+		})
 
 		return
 	})
 
 	http.ListenAndServe(":"+PORT, nil)
+}
+
+func onGET(w http.ResponseWriter, r *http.Request, cb func(w http.ResponseWriter, r *http.Request)) {
+	if r.Method != http.MethodGet {
+		return
+	}
+
+	cb(w, r)
+}
+
+func onPOST(w http.ResponseWriter, r *http.Request, cb func(w http.ResponseWriter, r *http.Request)) {
+	if r.Method != http.MethodPost {
+		return
+	}
+
+	cb(w, r)
 }
