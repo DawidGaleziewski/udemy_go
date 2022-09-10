@@ -19,10 +19,19 @@ type User struct {
 	CreationDate time.Time
 }
 
-func (user User) validate() (validationErrors []string, isValid bool, err error) {
+type QueryUser map[string]string
+
+func (user User) validate(db *sql.DB) (validationErrors []string, isValid bool, err error) {
 	const MAX_USER_LEN = 100
 	const MIN_PASSWORD_LEN = 8
 	//const MAX_PASSWORD_LEN = 1000
+
+	rows, err := db.Query(`SELECT email from gosql.admin_users`)
+
+	var cellValue string
+	for rows.Next() {
+		err = rows.Scan(&cellValue) // stoped here
+	}
 
 	if len(user.Name) == 0 {
 		validationErrors = append(validationErrors, "user.Name can't be empty")
@@ -63,9 +72,15 @@ func (user User) validate() (validationErrors []string, isValid bool, err error)
 }
 
 func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []string, err error) {
+	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+	if err != nil {
+		log.Println(err)
+	}
+	defer db.Close()
+
 	var isUserDataValid bool
 
-	validationErrors, isUserDataValid, err = user.validate()
+	validationErrors, isUserDataValid, err = user.validate(db)
 
 	if err != nil {
 		log.Println(err)
@@ -93,12 +108,6 @@ func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []str
 		CreationDate: user.CreationDate,
 	}
 
-	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
-	if err != nil {
-		log.Println(err)
-	}
-	defer db.Close()
-
 	userInsert := fmt.Sprintf(`
 	INSERT INTO gosql.admin_users (id, name, email, password, creation_date)
 	VALUES (
@@ -124,4 +133,46 @@ func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []str
 	}
 
 	return dbUserRecord, validationErrors, err
+}
+
+func (user User) FindAnd(db *sql.DB, query QueryUser) (usersResult []User, err error) {
+	var dbUserRecord User
+	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+	if err != nil {
+		log.Println(err)
+	}
+	defer db.Close()
+
+	sqlQueryString := `SELECT * from gosql.admin_users`
+	conditions := `WHERE`
+	for rowName, condition := range query {
+		conditions += "AND" + rowName + "=" + condition
+	} // end here
+
+	rows, err := db.Query(`SELECT * from gosql.admin_users`)
+
+	if err != nil {
+		log.Println(err)
+		return usersResult, err
+	}
+
+	for rows.Next() {
+		var creationTimeRaw []uint8
+		err = rows.Scan(&dbUserRecord.ID, &dbUserRecord.Name, &dbUserRecord.Email, &dbUserRecord.Password, &creationTimeRaw)
+		parsedCreationDate, err := time.Parse("2006-01-02 03:04:05", string(creationTimeRaw))
+		dbUserRecord.CreationDate = parsedCreationDate
+		if err != nil {
+			log.Println(err)
+			return usersResult, err
+		}
+		fmt.Println("record", dbUserRecord, "time raw")
+		if err != nil {
+			log.Println(err)
+			return usersResult, err
+		}
+
+		usersResult = append(usersResult, dbUserRecord)
+	}
+
+	return usersResult, err
 }

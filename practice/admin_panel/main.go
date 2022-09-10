@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"strings"
 
 	"net/http"
 
@@ -28,6 +29,8 @@ const PORT = "8080"
 
 func main() {
 	fmt.Println("server starting at port", PORT)
+
+	// template views
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			tpl.ExecuteTemplate(w, "homepage.gohtml", "")
@@ -35,18 +38,32 @@ func main() {
 		}
 
 	})
-
-	http.HandleFunc("/api/user/auth", func(w http.ResponseWriter, r *http.Request) {
-		// if isPOST(r) {
-		// 	return
-		// }
-	})
-
 	http.HandleFunc("/user/new", func(w http.ResponseWriter, r *http.Request) {
 		onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
 			tpl.ExecuteTemplate(w, "user_new.gohtml", "")
 			return
 		})
+	})
+
+	http.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
+		onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
+			userID := strings.Split(r.URL.Path, "/user/")[1]
+			fmt.Println(userID)
+			var user user.User
+			userData, err := user.Find(db, map[string]string{})
+			if err != nil {
+				http.Error(w, "server error", http.StatusInternalServerError)
+			}
+			tpl.ExecuteTemplate(w, "user_detail.gohtml", userData)
+			return
+		})
+	})
+
+	// api
+	http.HandleFunc("/api/user/auth", func(w http.ResponseWriter, r *http.Request) {
+		// if isPOST(r) {
+		// 	return
+		// }
 	})
 
 	http.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
