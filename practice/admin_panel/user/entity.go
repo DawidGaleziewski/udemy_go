@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -187,4 +188,37 @@ func (user User) FindBy(db *sql.DB, query QueryUser) (usersResult []User, err er
 	}
 
 	return usersResult, err
+}
+
+func (user User) VerifyCredentials(db *sql.DB, email string, password string) (verifiedUser User, isVerified bool, err error) {
+	usersFound, err := user.FindBy(db, map[string]string{
+		"email": email,
+	})
+
+	if err != nil {
+		log.Println(err)
+		return user, false, err
+	}
+
+	if len(usersFound) == 0 {
+		return user, false, err
+	}
+
+	var verifiedUsers []User
+	for _, dbUserRecord := range usersFound {
+		isValidPassword := bcrypt.CompareHashAndPassword([]byte(dbUserRecord.Password), []byte(password)) == nil
+		if dbUserRecord.Email == email && isValidPassword {
+			verifiedUsers = append(verifiedUsers, dbUserRecord)
+		}
+	}
+
+	if len(verifiedUsers) > 2 {
+		return user, false, errors.New("db should newer return more then two users verified by one credentials")
+	}
+
+	if len(verifiedUsers) == 0 {
+		return user, false, err
+	}
+
+	return verifiedUser, true, err
 }
