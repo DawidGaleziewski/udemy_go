@@ -101,7 +101,6 @@ func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []str
 		return dbUserRecord, validationErrors, err
 	}
 
-	fmt.Println("before creating user")
 	dbUserRecord = User{
 		ID:           user.ID,
 		Name:         user.Name,
