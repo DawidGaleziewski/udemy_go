@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -135,7 +136,7 @@ func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []str
 	return dbUserRecord, validationErrors, err
 }
 
-func (user User) FindAnd(db *sql.DB, query QueryUser) (usersResult []User, err error) {
+func (user User) FindBy(db *sql.DB, query QueryUser) (usersResult []User, err error) {
 	var dbUserRecord User
 	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
 	if err != nil {
@@ -144,12 +145,23 @@ func (user User) FindAnd(db *sql.DB, query QueryUser) (usersResult []User, err e
 	defer db.Close()
 
 	sqlQueryString := `SELECT * from gosql.admin_users`
-	conditions := `WHERE`
+	var whereConditionsSlice []string
 	for rowName, condition := range query {
-		conditions += "AND" + rowName + "=" + condition
-	} // end here
+		whereConditionsSlice = append(whereConditionsSlice, fmt.Sprintf("%v=\"%v\"", rowName, condition))
 
-	rows, err := db.Query(`SELECT * from gosql.admin_users`)
+	}
+
+	whereConditionsQuery := ` WHERE `
+	if len(whereConditionsSlice) > 0 {
+		whereConditionsQuery += strings.Join(whereConditionsSlice, "AND ")
+	}
+
+	if len(whereConditionsQuery) > 0 {
+		sqlQueryString += whereConditionsQuery
+	}
+
+	fmt.Println("using query", sqlQueryString)
+	rows, err := db.Query(sqlQueryString)
 
 	if err != nil {
 		log.Println(err)

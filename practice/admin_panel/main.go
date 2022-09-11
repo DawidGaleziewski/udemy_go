@@ -36,8 +36,8 @@ func main() {
 			tpl.ExecuteTemplate(w, "homepage.gohtml", "")
 			return
 		}
-
 	})
+
 	http.HandleFunc("/user/new", func(w http.ResponseWriter, r *http.Request) {
 		onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
 			tpl.ExecuteTemplate(w, "user_new.gohtml", "")
@@ -50,11 +50,14 @@ func main() {
 			userID := strings.Split(r.URL.Path, "/user/")[1]
 			fmt.Println(userID)
 			var user user.User
-			userData, err := user.Find(db, map[string]string{})
+			users, err := user.FindBy(db, map[string]string{
+				"id": userID,
+			})
 			if err != nil {
 				http.Error(w, "server error", http.StatusInternalServerError)
 			}
-			tpl.ExecuteTemplate(w, "user_detail.gohtml", userData)
+			fmt.Println("data returned ", users[0])
+			tpl.ExecuteTemplate(w, "user_detail.gohtml", users[0])
 			return
 		})
 	})
