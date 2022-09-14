@@ -1,16 +1,19 @@
 package main
 
 import (
+	"admin_panel/session"
 	"admin_panel/user"
 	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
 	"strings"
+	"time"
 
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 )
 
 var tpl *template.Template
@@ -38,11 +41,11 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/user/new", func(w http.ResponseWriter, r *http.Request) {
-		onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
-			tpl.ExecuteTemplate(w, "user_new.gohtml", "")
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			tpl.ExecuteTemplate(w, "login.gohtml", "")
 			return
-		})
+		}
 	})
 
 	http.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
@@ -62,11 +65,59 @@ func main() {
 		})
 	})
 
+	http.HandleFunc("/user/new", func(w http.ResponseWriter, r *http.Request) {
+		onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
+			tpl.ExecuteTemplate(w, "user_new.gohtml", "")
+			return
+		})
+	})
+
 	// api
 	http.HandleFunc("/api/user/auth", func(w http.ResponseWriter, r *http.Request) {
 		// if isPOST(r) {
 		// 	return
 		// }
+		onPOST(w, r, func(w http.ResponseWriter, r *http.Request) {
+			r.ParseForm()
+			email := r.FormValue("email")
+			password := r.FormValue("password")
+			// verifiedUser, ok, err :=
+			verifiedUser, isAuthn, err := user.User.VerifyCredentials(user.User{}, db, email, password)
+
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "server error", http.StatusInternalServerError)
+				return
+			}
+
+			if !isAuthn {
+				http.Error(w, "wront credentials", http.StatusUnauthorized)
+				return
+			}
+
+			id := uuid.New()
+			newSession := session.Session{
+				ID:               id,
+				UserID:           verifiedUser.ID,
+				CreationDate:     time.Now(),
+				LastActivityDate: time.Now(),
+			}
+
+			sessionRecord, err := newSession.Create(db)
+
+			if err != nil {
+				log.Println(err)
+			}
+
+			fmt.Print("set cookie", newSession)
+
+			http.SetCookie(w, &http.Cookie{
+				Name:  "session_id",
+				Value: sessionRecord.ID.String(),
+			})
+
+		})
+		return
 	})
 
 	http.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
