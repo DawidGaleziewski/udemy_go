@@ -193,6 +193,7 @@ func (user User) VerifyCredentials(db *sql.DB, email string, password string) (v
 	usersFound, err := user.FindBy(db, map[string]string{
 		"email": email,
 	})
+	fmt.Println("users found by email", email, usersFound)
 
 	if err != nil {
 		log.Println(err)
@@ -206,18 +207,20 @@ func (user User) VerifyCredentials(db *sql.DB, email string, password string) (v
 	var verifiedUsers []User
 	for _, dbUserRecord := range usersFound {
 		isValidPassword := bcrypt.CompareHashAndPassword([]byte(dbUserRecord.Password), []byte(password)) == nil
+		fmt.Println("pass:", password, "compared to", dbUserRecord.Password, "isvalid", isValidPassword)
 		if dbUserRecord.Email == email && isValidPassword {
+			fmt.Println("is adding pass", dbUserRecord)
 			verifiedUsers = append(verifiedUsers, dbUserRecord)
 		}
 	}
 
-	if len(verifiedUsers) > 2 {
-		return user, false, errors.New("db should newer return more then two users verified by one credentials")
+	if len(verifiedUsers) > 1 {
+		return user, false, errors.New("db should never return more then two users verified by one credentials")
 	}
 
 	if len(verifiedUsers) == 0 {
 		return user, false, err
 	}
 
-	return verifiedUser, true, err
+	return verifiedUsers[0], true, err
 }

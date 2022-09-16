@@ -109,8 +109,6 @@ func main() {
 				log.Println(err)
 			}
 
-			fmt.Print("set cookie", newSession)
-
 			http.SetCookie(w, &http.Cookie{
 				Name:  "session_id",
 				Value: sessionRecord.ID.String(),
