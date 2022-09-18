@@ -22,6 +22,7 @@ var db *sql.DB
 
 func init() {
 	tpl, err = template.ParseGlob("templates/*.gohtml")
+	//tpl.ParseGlob("templates/partials/*.gohtml")
 	if err != nil {
 		log.Println(err)
 	}
@@ -112,10 +113,51 @@ func main() {
 			http.SetCookie(w, &http.Cookie{
 				Name:  "session_id",
 				Value: sessionRecord.ID.String(),
+				Path:  "/",
 			})
 
+			return
 		})
-		return
+	})
+
+	http.HandleFunc("/api/user/logout", func(w http.ResponseWriter, r *http.Request) {
+		onPOST(w, r, func(w http.ResponseWriter, r *http.Request) {
+			sessionCookie, err := r.Cookie("session_id")
+
+			if err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+
+			s := session.Session{}
+			sessionDBRecords, err := s.FindBy(db, map[string]string{
+				"id": sessionCookie.Value,
+			})
+
+			if err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if len(sessionDBRecords) > 1 {
+				log.Println("db should not return more then one session record")
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if len(sessionDBRecords) == 1 {
+				_, err := sessionDBRecords[0].Delete(db)
+				if err != nil {
+					log.Panicln(err)
+				}
+			}
+
+			sessionCookie.MaxAge = -1
+			http.SetCookie(w, sessionCookie)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		})
 	})
 
 	http.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
@@ -135,6 +177,14 @@ func main() {
 
 func onGET(w http.ResponseWriter, r *http.Request, cb func(w http.ResponseWriter, r *http.Request)) {
 	if r.Method != http.MethodGet {
+		return
+	}
+
+	cb(w, r)
+}
+
+func onDelete(w http.ResponseWriter, r *http.Request, cb func(w http.ResponseWriter, r *http.Request)) {
+	if r.Method != http.MethodDelete {
 		return
 	}
 
