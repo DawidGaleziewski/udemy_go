@@ -33,7 +33,7 @@ func (session Session) Create(db *sql.DB) (Session, error) {
 		'%v', 
 		'%v',
 		'%v'
-	);`, session.ID, session.UserID, session.CreationDate.UTC().Format("2006-01-02 03:04:05"), session.LastActivityDate.UTC().Format("2006-01-02 03:04:05"))
+	);`, session.ID, session.UserID, session.CreationDate.Format("2006-01-02 03:04:05"), session.LastActivityDate.Format("2006-01-02 03:04:05"))
 
 	fmt.Println("executing query ", sessionInsert)
 
@@ -75,7 +75,6 @@ func (session Session) FindBy(db *sql.DB, query map[string]string) (sessionResul
 		sqlQueryString += whereConditionsQuery
 	}
 
-	fmt.Println("using query", sqlQueryString)
 	rows, err := db.Query(sqlQueryString)
 
 	if err != nil {
@@ -86,21 +85,17 @@ func (session Session) FindBy(db *sql.DB, query map[string]string) (sessionResul
 	for rows.Next() {
 		var creationTimeRaw []uint8
 		var lastActivityTimeRaw []uint8
-		err = rows.Scan(&dbSessionRecord.ID, &dbSessionRecord.UserID, &dbSessionRecord.CreationDate, &creationTimeRaw, &lastActivityTimeRaw)
+		err = rows.Scan(&dbSessionRecord.ID, &dbSessionRecord.UserID, &creationTimeRaw, &lastActivityTimeRaw)
 
-		parsedCreationDate, err := time.Parse("2006-01-02 03:04:05", string(creationTimeRaw))
+		dbSessionRecord.CreationDate, err = time.Parse("2006-01-02 03:04:05", string(creationTimeRaw))
 		if err != nil {
-			log.Println(err)
-			return sessionResults, err
+			log.Println("parsing creationDate", err)
 		}
-		dbSessionRecord.CreationDate = parsedCreationDate
 
-		parsedLastActivityTimeRaw, err := time.Parse("2006-01-02 03:04:05", string(creationTimeRaw))
+		dbSessionRecord.LastActivityDate, err = time.Parse("2006-01-02 03:04:05", string(lastActivityTimeRaw))
 		if err != nil {
-			log.Println(err)
-			return sessionResults, err
+			log.Println("parsing LastActivityDate", err)
 		}
-		dbSessionRecord.LastActivityDate = parsedLastActivityTimeRaw
 
 		sessionResults = append(sessionResults, dbSessionRecord)
 	}
@@ -109,17 +104,23 @@ func (session Session) FindBy(db *sql.DB, query map[string]string) (sessionResul
 }
 
 func (session Session) Delete(db *sql.DB) (dbSessionRecord Session, err error) {
-	sessionDeleteStatment := fmt.Sprintf(`DELETE FROM gosql.sessions WHERE id="%v"`, session.ID)
-
-	stmt, err := db.Prepare(sessionDeleteStatment)
+	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
 	if err != nil {
 		log.Println(err)
+	}
+	defer db.Close()
+
+	fmt.Println("session recived: ", session)
+	sessionDeleteStatment := fmt.Sprintf(`DELETE FROM gosql.sessions WHERE id="%v"`, session.ID)
+	stmt, err := db.Prepare(sessionDeleteStatment)
+	if err != nil {
+		log.Println("error prepering statment", err)
 		return session, err
 	}
 
 	_, err = stmt.Exec()
 	if err != nil {
-		log.Println(err)
+		log.Println("error executing statment: ", sessionDeleteStatment, err)
 		return session, err
 	}
 

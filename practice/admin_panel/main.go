@@ -133,6 +133,7 @@ func main() {
 			sessionDBRecords, err := s.FindBy(db, map[string]string{
 				"id": sessionCookie.Value,
 			})
+			fmt.Println("session ", sessionDBRecords)
 
 			if err != nil {
 				log.Println(err)
@@ -153,8 +154,13 @@ func main() {
 				}
 			}
 
-			sessionCookie.MaxAge = -1
-			http.SetCookie(w, sessionCookie)
+			expiredCookie := http.Cookie{
+				Name:    "session_id",
+				Path:    "/",
+				MaxAge:  -1,
+				Expires: time.Now().Add(-100 * time.Hour),
+			}
+			http.SetCookie(w, &expiredCookie)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		})
