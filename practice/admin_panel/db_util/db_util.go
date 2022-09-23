@@ -3,6 +3,7 @@ package dbutil
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -14,6 +15,16 @@ type config struct {
 	DBName     string
 	Charset    string
 	TimeLayout string
+}
+
+var Config = config{
+	Username:   "test_mysql",
+	Password:   "Test123!",
+	Host:       "127.0.0.1:3306",
+	DBName:     "gosql",
+	Charset:    "utf8",
+	DriverName: "mysql",
+	TimeLayout: "2006-01-02 03:04:05",
 }
 
 func (c config) FormatConnectionURL() string {
@@ -30,12 +41,34 @@ func (c config) OpenConnection() (*sql.DB, error) {
 	return sql.Open(c.DriverName, c.FormatConnectionURL())
 }
 
-var Config = config{
-	Username:   "test_mysql",
-	Password:   "Test123!",
-	Host:       "127.0.0.1:3306",
-	DBName:     "gosql",
-	Charset:    "utf8",
-	DriverName: "mysql",
-	TimeLayout: "2006-01-02 03:04:05",
+type Query map[string]string
+
+func (query Query) Where() string {
+	sqlQueryString := ""
+	var whereConditionsSlice []string
+	for rowName, condition := range query {
+		whereConditionsSlice = append(whereConditionsSlice, fmt.Sprintf("%v=\"%v\"", rowName, condition))
+
+	}
+
+	whereConditionsQuery := ` WHERE `
+	if len(whereConditionsSlice) > 0 {
+		whereConditionsQuery += strings.Join(whereConditionsSlice, "AND ")
+	}
+
+	if len(whereConditionsQuery) > 0 {
+		sqlQueryString += whereConditionsQuery
+	}
+
+	return sqlQueryString
+}
+
+func (query Query) Select(tableName string) string {
+	sqlQueryString := fmt.Sprintf("SELECT * from %v.%v", Config.DBName, tableName) + query.Where()
+	return sqlQueryString
+}
+
+func (query Query) Delete(tableName string) string {
+	sqlQueryString := fmt.Sprintf("DELETE FROM %v.%v", Config.DBName, tableName) + query.Where()
+	return sqlQueryString
 }

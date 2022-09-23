@@ -33,7 +33,7 @@ func CreateAdminUser(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		CreationDate: time.Now(),
 	}
 
-	userData, validationErrors, err := user.Register(db)
+	userData, validationErrors, err := user.Register()
 
 	if err != nil {
 		log.Println(err)

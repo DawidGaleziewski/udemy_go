@@ -1,12 +1,12 @@
 package user
 
 import (
+	dbutil "admin_panel/db_util"
 	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,12 +21,9 @@ type User struct {
 	CreationDate time.Time
 }
 
-type QueryUser map[string]string
-
 func (user User) validate(db *sql.DB) (validationErrors []string, isValid bool, err error) {
 	const MAX_USER_LEN = 100
 	const MIN_PASSWORD_LEN = 8
-	//const MAX_PASSWORD_LEN = 1000
 
 	rows, err := db.Query(`SELECT email from gosql.admin_users`)
 
@@ -73,8 +70,8 @@ func (user User) validate(db *sql.DB) (validationErrors []string, isValid bool, 
 	return validationErrors, isValid, err
 }
 
-func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []string, err error) {
-	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+func (user User) Register() (dbUserRecord User, validationErrors []string, err error) {
+	db, err := dbutil.Config.OpenConnection()
 	if err != nil {
 		log.Println(err)
 	}
@@ -117,9 +114,7 @@ func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []str
 		'%v',
 		'%v',
 		'%v'
-	);`, dbUserRecord.ID, dbUserRecord.Name, dbUserRecord.Email, dbUserRecord.Password, dbUserRecord.CreationDate.UTC().Format("2006-01-02 03:04:05"))
-
-	fmt.Println("executing query ", userInsert)
+	);`, dbUserRecord.ID, dbUserRecord.Name, dbUserRecord.Email, dbUserRecord.Password, dbutil.Config.FormatTime(dbUserRecord.CreationDate.UTC()))
 
 	stmt, err := db.Prepare(userInsert)
 	if err != nil {
@@ -136,32 +131,15 @@ func (user User) Register(db *sql.DB) (dbUserRecord User, validationErrors []str
 	return dbUserRecord, validationErrors, err
 }
 
-func (user User) FindBy(db *sql.DB, query QueryUser) (usersResult []User, err error) {
+func (user User) FindBy(query dbutil.Query) (usersResult []User, err error) {
 	var dbUserRecord User
-	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+	db, err := dbutil.Config.OpenConnection()
 	if err != nil {
 		log.Println(err)
 	}
 	defer db.Close()
 
-	sqlQueryString := `SELECT * from gosql.admin_users`
-	var whereConditionsSlice []string
-	for rowName, condition := range query {
-		whereConditionsSlice = append(whereConditionsSlice, fmt.Sprintf("%v=\"%v\"", rowName, condition))
-
-	}
-
-	whereConditionsQuery := ` WHERE `
-	if len(whereConditionsSlice) > 0 {
-		whereConditionsQuery += strings.Join(whereConditionsSlice, "AND ")
-	}
-
-	if len(whereConditionsQuery) > 0 {
-		sqlQueryString += whereConditionsQuery
-	}
-
-	fmt.Println("using query", sqlQueryString)
-	rows, err := db.Query(sqlQueryString)
+	rows, err := db.Query(query.Select("admin_users"))
 
 	if err != nil {
 		log.Println(err)
@@ -171,29 +149,27 @@ func (user User) FindBy(db *sql.DB, query QueryUser) (usersResult []User, err er
 	for rows.Next() {
 		var creationTimeRaw []uint8
 		err = rows.Scan(&dbUserRecord.ID, &dbUserRecord.Name, &dbUserRecord.Email, &dbUserRecord.Password, &creationTimeRaw)
-		parsedCreationDate, err := time.Parse("2006-01-02 03:04:05", string(creationTimeRaw))
+		parsedCreationDate, err := time.Parse(dbutil.Config.TimeLayout, string(creationTimeRaw))
 		dbUserRecord.CreationDate = parsedCreationDate
 		if err != nil {
 			log.Println(err)
 			return usersResult, err
 		}
-		fmt.Println("record", dbUserRecord, "time raw")
+
 		if err != nil {
 			log.Println(err)
 			return usersResult, err
 		}
-
 		usersResult = append(usersResult, dbUserRecord)
 	}
 
 	return usersResult, err
 }
 
-func (user User) VerifyCredentials(db *sql.DB, email string, password string) (verifiedUser User, isVerified bool, err error) {
-	usersFound, err := user.FindBy(db, map[string]string{
+func (user User) VerifyCredentials(email string, password string) (verifiedUser User, isVerified bool, err error) {
+	usersFound, err := user.FindBy(map[string]string{
 		"email": email,
 	})
-	fmt.Println("users found by email", email, usersFound)
 
 	if err != nil {
 		log.Println(err)
@@ -207,9 +183,8 @@ func (user User) VerifyCredentials(db *sql.DB, email string, password string) (v
 	var verifiedUsers []User
 	for _, dbUserRecord := range usersFound {
 		isValidPassword := bcrypt.CompareHashAndPassword([]byte(dbUserRecord.Password), []byte(password)) == nil
-		fmt.Println("pass:", password, "compared to", dbUserRecord.Password, "isvalid", isValidPassword)
+
 		if dbUserRecord.Email == email && isValidPassword {
-			fmt.Println("is adding pass", dbUserRecord)
 			verifiedUsers = append(verifiedUsers, dbUserRecord)
 		}
 	}

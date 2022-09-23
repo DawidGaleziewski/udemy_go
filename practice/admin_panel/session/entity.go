@@ -4,7 +4,6 @@ import (
 	dbutil "admin_panel/db_util"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,8 +35,6 @@ func (session Session) Create() (Session, error) {
 		'%v'
 	);`, session.ID, session.UserID, dbutil.Config.FormatTime(session.CreationDate), dbutil.Config.FormatTime(session.LastActivityDate))
 
-	fmt.Println("executing query ", sessionInsert)
-
 	stmt, err := db.Prepare(sessionInsert)
 	if err != nil {
 		log.Println(err)
@@ -52,7 +49,7 @@ func (session Session) Create() (Session, error) {
 	return session, err
 }
 
-func (session Session) FindBy(query map[string]string) (sessionResults []Session, err error) {
+func (session Session) FindBy(query dbutil.Query) (sessionResults []Session, err error) {
 	var dbSessionRecord Session
 	db, err := dbutil.Config.OpenConnection()
 	if err != nil {
@@ -60,23 +57,7 @@ func (session Session) FindBy(query map[string]string) (sessionResults []Session
 	}
 	defer db.Close()
 
-	sqlQueryString := `SELECT * from gosql.sessions`
-	var whereConditionsSlice []string
-	for rowName, condition := range query {
-		whereConditionsSlice = append(whereConditionsSlice, fmt.Sprintf("%v=\"%v\"", rowName, condition))
-
-	}
-
-	whereConditionsQuery := ` WHERE `
-	if len(whereConditionsSlice) > 0 {
-		whereConditionsQuery += strings.Join(whereConditionsSlice, "AND ")
-	}
-
-	if len(whereConditionsQuery) > 0 {
-		sqlQueryString += whereConditionsQuery
-	}
-
-	rows, err := db.Query(sqlQueryString)
+	rows, err := db.Query(query.Select("sessions"))
 
 	if err != nil {
 		log.Println(err)
@@ -88,12 +69,12 @@ func (session Session) FindBy(query map[string]string) (sessionResults []Session
 		var lastActivityTimeRaw []uint8
 		err = rows.Scan(&dbSessionRecord.ID, &dbSessionRecord.UserID, &creationTimeRaw, &lastActivityTimeRaw)
 
-		dbSessionRecord.CreationDate, err = time.Parse("2006-01-02 03:04:05", string(creationTimeRaw))
+		dbSessionRecord.CreationDate, err = time.Parse(dbutil.Config.TimeLayout, string(creationTimeRaw))
 		if err != nil {
 			log.Println("parsing creationDate", err)
 		}
 
-		dbSessionRecord.LastActivityDate, err = time.Parse("2006-01-02 03:04:05", string(lastActivityTimeRaw))
+		dbSessionRecord.LastActivityDate, err = time.Parse(dbutil.Config.TimeLayout, string(lastActivityTimeRaw))
 		if err != nil {
 			log.Println("parsing LastActivityDate", err)
 		}
@@ -111,8 +92,11 @@ func (session Session) Delete() (dbSessionRecord Session, err error) {
 	}
 	defer db.Close()
 
-	fmt.Println("session recived: ", session)
-	sessionDeleteStatment := fmt.Sprintf(`DELETE FROM gosql.sessions WHERE id="%v"`, session.ID)
+	query := dbutil.Query{
+		"id": session.ID.String(),
+	}
+	sessionDeleteStatment := query.Delete("sessions")
+
 	stmt, err := db.Prepare(sessionDeleteStatment)
 	if err != nil {
 		log.Println("error prepering statment", err)
