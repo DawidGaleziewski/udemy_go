@@ -104,7 +104,7 @@ func main() {
 				LastActivityDate: time.Now(),
 			}
 
-			sessionRecord, err := newSession.Create(db)
+			sessionRecord, err := newSession.Create()
 
 			if err != nil {
 				log.Println(err)
@@ -130,10 +130,9 @@ func main() {
 			}
 
 			s := session.Session{}
-			sessionDBRecords, err := s.FindBy(db, map[string]string{
+			sessionDBRecords, err := s.FindBy(map[string]string{
 				"id": sessionCookie.Value,
 			})
-			fmt.Println("session ", sessionDBRecords)
 
 			if err != nil {
 				log.Println(err)
@@ -148,29 +147,20 @@ func main() {
 			}
 
 			if len(sessionDBRecords) == 1 {
-				_, err := sessionDBRecords[0].Delete(db)
+				_, err := sessionDBRecords[0].Delete()
 				if err != nil {
 					log.Panicln(err)
 				}
 			}
 
-			expiredCookie := http.Cookie{
-				Name:    "session_id",
-				Path:    "/",
-				MaxAge:  -1,
-				Expires: time.Now().Add(-100 * time.Hour),
-			}
-			http.SetCookie(w, &expiredCookie)
+			sessionCookie.MaxAge = -1
+			http.SetCookie(w, sessionCookie)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		})
 	})
 
 	http.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
-		// onGET(w, r, func(w http.ResponseWriter, r *http.Request) {
-		// 	user.GetUserDetail(w, r, *db)
-		// })
-
 		onPOST(w, r, func(w http.ResponseWriter, r *http.Request) {
 			user.CreateAdminUser(w, r, db)
 		})

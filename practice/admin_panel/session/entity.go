@@ -1,7 +1,7 @@
 package session
 
 import (
-	"database/sql"
+	dbutil "admin_panel/db_util"
 	"fmt"
 	"log"
 	"strings"
@@ -17,13 +17,14 @@ type Session struct {
 	LastActivityDate time.Time
 }
 
-func (session Session) Create(db *sql.DB) (Session, error) {
+func (session Session) Create() (Session, error) {
 	var err error
-	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+	db, err := dbutil.Config.OpenConnection()
 	if err != nil {
 		log.Println(err)
 		return session, err
 	}
+
 	defer db.Close()
 	// to do Verify that no more seesions then one exists for single user. If it does, destroy the last session
 	sessionInsert := fmt.Sprintf(`
@@ -33,7 +34,7 @@ func (session Session) Create(db *sql.DB) (Session, error) {
 		'%v', 
 		'%v',
 		'%v'
-	);`, session.ID, session.UserID, session.CreationDate.Format("2006-01-02 03:04:05"), session.LastActivityDate.Format("2006-01-02 03:04:05"))
+	);`, session.ID, session.UserID, dbutil.Config.FormatTime(session.CreationDate), dbutil.Config.FormatTime(session.LastActivityDate))
 
 	fmt.Println("executing query ", sessionInsert)
 
@@ -51,9 +52,9 @@ func (session Session) Create(db *sql.DB) (Session, error) {
 	return session, err
 }
 
-func (session Session) FindBy(db *sql.DB, query map[string]string) (sessionResults []Session, err error) {
+func (session Session) FindBy(query map[string]string) (sessionResults []Session, err error) {
 	var dbSessionRecord Session
-	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+	db, err := dbutil.Config.OpenConnection()
 	if err != nil {
 		log.Println(err)
 	}
@@ -103,8 +104,8 @@ func (session Session) FindBy(db *sql.DB, query map[string]string) (sessionResul
 	return sessionResults, err
 }
 
-func (session Session) Delete(db *sql.DB) (dbSessionRecord Session, err error) {
-	db, err = sql.Open("mysql", "test_mysql:Test123!@tcp(127.0.0.1:3306)/gosql?charset=utf8")
+func (session Session) Delete() (dbSessionRecord Session, err error) {
+	db, err := dbutil.Config.OpenConnection()
 	if err != nil {
 		log.Println(err)
 	}
