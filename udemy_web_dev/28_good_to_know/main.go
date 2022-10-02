@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 func main() {
@@ -57,7 +56,5 @@ func anotherRequest(ctx context.Context) int {
 	return uid
 }
 
-
 // 5. https and tls
-// whe using ssl cert we want to use 
-http.
+// whe using ssl cert we want to use http.ListenAndServeTLS() which will accept cert and a private key using for communication encrytption
